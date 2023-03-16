@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "dayjs": "^1.11.7",
     "node": "^19.8.1",
     "sqlite3": "^5.1.6"
   }
