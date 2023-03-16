@@ -14,7 +14,7 @@ const db= new sqlite.Database("lab2/films.db", (err) => {if (err) throw err;});
 
 
 
-function Film(id, title, isFavorite = false, watchDate, rating) {
+function Film(id, title, isFavorite=0, watchDate, rating) {
   this.id = id;
   this.title = title;
   this.favorite = isFavorite;
@@ -87,6 +87,8 @@ function FilmLibrary() {
 
   //implementing db functionalities for lab2 starting here
 
+  //get all film return a promise that resolve in an array of films
+
   this.getAllFilmsFromDB = function () {
 
     return new Promise((resolve, rejects) => {
@@ -97,7 +99,7 @@ function FilmLibrary() {
           rejects(err);
         } else {
           rows.forEach(rows => {
-            ans.push(new Film(rows.id, rows.title, rows.favourite, rows.watchdate, rows.rating));
+            ans.push(new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
             resolve(ans);
           
           });
@@ -107,10 +109,33 @@ function FilmLibrary() {
     });
   }
 
+  //get all favourite film return a promise that resolve in an array of films
+
+  this.getAllFavoritesFromDB = function () {
+
+    return new Promise((resolve, rejects) => {
+      const sql = "SELECT *, title FROM films WHERE favorite = 1";
+      let ans = [];
+      db.all(sql, (err, rows) => {
+        if (err) {
+          rejects(err);
+        } else {
+          rows.forEach(rows => {
+            ans.push(new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
+            resolve(ans);
+          
+          });
+        }
+      });
+
+    });
+
+  }
+
 }
 
 
-function main() {
+async function main() {
   // Creating some film entries
   const f1 = new Film(1, "Pulp Fiction", true, "2023-03-10", 5);
   const f2 = new Film(2, "21 Grams", true, "2023-03-17", 4);
@@ -147,7 +172,14 @@ function main() {
 
   //testing getAllFilmsFromDB
   console.log("***** Films Fetched from FilmsDb *****");
-  library.getAllFilmsFromDB().then( list => {list.forEach((film)=> console.log(film.toString()))} );
+  await library.getAllFilmsFromDB().then( list => {list.forEach((film)=> console.log(film.toString()))} );
+  
+  //testing getAllFavouritesFromDB
+
+  console.log("***** Favorites Fetched from FilmsDb *****");
+  await library.getAllFavoritesFromDB().then( ans => {ans.forEach((film)=> console.log(film.toString()))} );
+  
+  
   // Additional instruction to enable debug 
   //debugger;
 }
