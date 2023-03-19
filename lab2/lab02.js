@@ -5,9 +5,11 @@
 
 'use strict';
 
-const { rejects } = require("assert");
+const { rejects, throws } = require("assert");
 const dayjs = require("dayjs");
+const { resolve } = require("path");
 const sqlite= require("sqlite3"); //importing sqlite after npm install
+const { isNull } = require("util");
 
 //defining a new object as database
 const db= new sqlite.Database("lab2/films.db", (err) => {if (err) throw err;});
@@ -114,7 +116,7 @@ function FilmLibrary() {
   this.getAllFavoritesFromDB = function () {
 
     return new Promise((resolve, rejects) => {
-      const sql = "SELECT *, title FROM films WHERE favorite = 1";
+      const sql = "SELECT * FROM films WHERE favorite = 1";
       let ans = [];
       db.all(sql, (err, rows) => {
         if (err) {
@@ -132,7 +134,94 @@ function FilmLibrary() {
 
   }
 
+  //get watched today
+  
+  this.getWatchedToday = function (){
+
+    return new Promise((resolve, reject) =>  {  
+      
+    const sql = "SELECT * FROM films WHERE watchdate = ?";
+    
+    db.all(sql, [(dayjs().format('MMMM D, YYYY'))], (err, rows) => {
+    
+      if (err){
+      rejects(err);
+    } else {
+
+       const answ =  rows.map(rows => new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
+       resolve(answ.length > 0 ? answ : []);      
+    }
+    });
+    });
+  }
+
+
+  
+  
+  // get all films with a minimum rating
+  
+  this.getMinimalRating = function(rate){
+    return new Promise((resolve, reject) => {
+      const sql = "SELECT * FROM films WHERE rating > ?";
+      db.all(sql, [rate], (err, rows) => {
+        if (err){
+          rejects(err);
+           } else{
+
+    
+          const answ =  rows.map(rows => new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
+          resolve(answ.length > 0 ? answ : []);
+        }
+      }
+    );
+  })
 }
+
+
+// get all film watched before a date
+ 
+this.getWatchedBeforeDate= function(date){
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT *, title FROM films WHERE watchdate < ?";
+    db.all(sql, [date], (err, rows) => {
+      if (err){
+        rejects(err);
+      } else {
+        if (rows.length == 0){
+          console.log("No film satisfy the date inserted");
+          process.exit(0);
+         } else{
+        const answ =  rows.map(row => new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
+        resolve(answ);
+      }
+    }
+  });
+})
+}
+
+// get film trough a string search in the title --> always wanted to use wildcards porcodidio padre
+
+this.searchByTitle = function(string){
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT *, title FROM films WHERE title LIKE %?%";
+    db.all(sql, [rating], (err, rows) => {
+      if (err){
+        rejects(err);
+      } else {
+        if (rows.length == 0){
+          console.log("No film found");
+          process.exit(0);
+         } else{
+        const answ =  rows.map(row => new Film(rows.id, rows.title, rows.favorite, rows.watchdate, rows.rating));
+        resolve(answ);
+      }
+    }
+  });
+})
+}
+
+}
+
 
 
 async function main() {
@@ -179,9 +268,23 @@ async function main() {
   console.log("***** Favorites Fetched from FilmsDb *****");
   await library.getAllFavoritesFromDB().then( ans => {ans.forEach((film)=> console.log(film.toString()))} );
   
+  //testing getwatched
+
+  console.log("***** watched today from FilmsDb *****");
+
+  await library.getWatchedToday().then(ans => {ans.forEach((film)=> console.log(film.toString())) });
+
+
+ 
+  // testing getMinimalRating()
+  console.log("***** filtered my minimum rating from FilmsDb *****");
+
+  await library.getMinimalRating(2).then(ans => {ans.forEach((film)=> console.log(film.toString())) });
   
+ // console.log(dayjs());
+
   // Additional instruction to enable debug 
-  //debugger;
+//debugger;
 }
 
 main();
